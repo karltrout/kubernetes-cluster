@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: load-balancer-dashboard
+  name: dashboard-loadbalancer
+  namespace: kubernetes-dashboard
+spec:
+  ports:
+    - port: 443 # External port for the LoadBalancer
+      protocol: TCP
+      targetPort: 8443 # Internal port of the Dashboard container
+  selector:
+    k8s-app: kubernetes-dashboard # Selects the Dashboard pods
+  type: LoadBalancer
