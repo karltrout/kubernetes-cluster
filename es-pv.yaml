@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: es-nfs-pv
+spec:
+  capacity:
+    storage: 10Gi # Define the storage capacity of the PV
+  accessModes:
+    - ReadWriteOnce # Specify how the volume can be accessed (ReadWriteOnce, ReadOnlyMany, ReadWriteMany)
+  persistentVolumeReclaimPolicy: Retain # How to handle the volume after its PVC is deleted (Retain, Recycle, Delete)
+  nfs:
+    path: /mnt/TrueNAS-pool/local/es-data # The path on the NFS server to be exported
+    server: 192.168.1.59 # The IP address or hostname of your NFS server

@@ -1,0 +1,30 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: elasticsearch-cluster
+spec:
+  version: 9.2.1
+  volumeClaimDeletePolicy: DeleteOnScaledownOnly
+  nodeSets:
+  - name: default
+    count: 1
+    podTemplate:
+      spec:
+        nodeSelector:
+          increasedvm: "true"
+        # This init container ensures that the `max_map_count` setting has been applied before starting Elasticsearch.
+        # This is not required, but is encouraged when using the Daemonset applied with 'max-map-count-ds.yaml'.
+        # Do not use this if setting config.node.store.allow_mmap: false
+        initContainers:
+        - name: max-map-count-check
+          command: ['sh', '-c', "while true; do mmc=$(cat /proc/sys/vm/max_map_count); if [ ${mmc} -eq 262144 ]; then exit 0; fi; sleep 1; done"]
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
+        storageClassName: nfs-client

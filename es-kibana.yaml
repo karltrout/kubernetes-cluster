@@ -1,0 +1,16 @@
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: kibana-es
+spec:
+  version: 9.2.1
+  count: 1
+  elasticsearchRef:
+    name: elasticsearch-cluster
+  http:
+    service:
+      spec:
+        type: LoadBalancer
+    tls:
+      certificate:
+        secretName: default-home-thiis-tls

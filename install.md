@@ -254,6 +254,81 @@ kubectl apply -f kube-flannel.yml
 kubectl apply -f kube-vip-cloud-controller.yaml 
 kubectl apply -f kube-vip-ccm-configmap.yaml
 ```
+**ElasticSearch Log Database Operator**
+```
+kubectl create -f ECK-crds.yaml 
+kubectl apply -f ECK-operator.yaml
+kubectl label nodes k8sn03.home.thiis.co increasedvm=true
+kubectl apply -f es-pv.yaml 
+kubectl apply -f max-map-count-ds.yaml
+
+mkdir NFS_CSI_DRIVER
+cd NFS_CSI_DRIVER/
+```
+https://github.com/kubernetes-csi/csi-driver-nfs#readme
+```
+git clone https://github.com/kubernetes-csi/csi-driver-nfs.git
+cd csi-driver-nfs/
+./deploy/install-driver.sh v4.12.1 local
+kubectl -n kube-system get pod -o wide -l app=csi-nfs-controller
+kubectl -n kube-system get pod -o wide -l app=csi-nfs-node
+```
+https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner
+```
+cd ../
+git clone https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner.git
+cd nfs-subdir-external-provisioner/
+```
+***NOTE: using default namespace here***
+```
+kubectl apply -f deploy/rbac.yaml
+vim  deploy/deployment.yaml
+kubectl apply -f deploy/deployment.yaml
+kubectl apply -f deploy/class.yam
+```
+***TEST WRITING TO THE STORAGE***
+```
+kubectl create -f deploy/test-claim.yaml -f deploy/test-pod.yaml
+```
+***LOOK FOR THE FILE 'SUCCESS' in the nfs share***
+```
+kubectl create -f deploy/test-claim.yaml -f deploy/test-pod.yaml
+kubectl delete -f deploy/test-pod.yaml -f deploy/test-claim.yaml
+cd ../../
+
+kubectl apply -f elasticsearch-cluster.yaml
+kubectl get elasticsearch
+PASSWORD=$(kubectl get secret elasticsearch-cluster-es-elastic-user -o go-template='{{.data.elastic | base64deco
+de}}')
+USER='elastic'
+
+kubectl apply -f es-kibana.yaml
+kubectl get kibana
+
+kubectl get service kibana-es-kb-http
+kubectl port-forward service/kibana-es-kb-http 5601
+```
+
+**kube-state-metrics**
+
+***NOTE: This is so elasticsearh can monitor the kubernetes cluster***
+```
+git clone -b release-2.14 --single-branch  https://github.com/kubernetes/kube-state-metrics.git
+cd kube-state-metrics
+kubectl -n kube-system apply -f examples/standard/cluster-role.yaml -f examples/standard/cluster-role-binding.yaml -f examples/standard/service-account.yaml -f examples/standard/deployment.yaml -f examples/standard/service.yaml
+
+```
+
+
+**Fluent-Operator Install**
+
+*NOTE: will fail without the --server-side flag.*
+```
+kubectl create namespace fluent
+kubectl apply -f fluent-setup.yaml --server-side
+```
+
+
 
 `Following are things I tried to do`
 
