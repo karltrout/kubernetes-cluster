@@ -311,12 +311,17 @@ kubectl port-forward service/kibana-es-kb-http 5601
 
 **kube-state-metrics**
 
-***NOTE: This is so elasticsearh can monitor the kubernetes cluster***
+***NOTE: This is so elasticsearch can monitor the kubernetes cluster***
 ```
 git clone -b release-2.14 --single-branch  https://github.com/kubernetes/kube-state-metrics.git
 cd kube-state-metrics
 kubectl -n kube-system apply -f examples/standard/cluster-role.yaml -f examples/standard/cluster-role-binding.yaml -f examples/standard/service-account.yaml -f examples/standard/deployment.yaml -f examples/standard/service.yaml
 
+```
+
+**Elasticsearch agent.... not sure about this but it does send data for testingf to elasticsearch**
+```
+kubectl apply -f kubernetes-integration.yaml
 ```
 
 
