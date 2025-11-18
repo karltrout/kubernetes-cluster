@@ -332,7 +332,14 @@ kubectl apply -f kubernetes-integration.yaml
 kubectl create namespace fluent
 kubectl apply -f fluent-setup.yaml --server-side
 ```
-
+**Fluentd setup**
+```
+kubectl apply -f fluentd-deploy.yaml
+```
+**fluentbit deploy**
+```
+ kubectl apply -f fluentbit-deploy.yaml
+ ```
 
 
 `Following are things I tried to do`
