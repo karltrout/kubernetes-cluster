@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: fluentd-nfs-pv
+spec:
+  capacity:
+    storage: 1Gi # Define the storage capacity of the PV
+  accessModes:
+    - ReadWriteMany # Specify how the volume can be accessed (ReadWriteOnce, ReadOnlyMany, ReadWriteMany)
+  persistentVolumeReclaimPolicy: Delete # How to handle the volume after its PVC is deleted (Retain, Recycle, Delete)
+  nfs:
+    path: /mnt/TrueNAS-pool/local/fluentd-buffer # The path on the NFS server to be exported
+    server: 192.168.1.59 # The IP address or hostname of your NFS server

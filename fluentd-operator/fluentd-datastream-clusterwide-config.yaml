@@ -8,9 +8,10 @@ spec:
   watchedNamespaces: 
   - kube-system
   - default
-  - kafka
-  - elastic
+  - elastic-system
   - fluent
+  - cert-manager
+  - ingress-nginx
   clusterOutputSelector:
     matchLabels:
       output.fluentd.fluent.io/scope: "cluster"
@@ -25,8 +26,19 @@ metadata:
     output.fluentd.fluent.io/enabled: "true"
 spec: 
   outputs: 
-  - elasticsearch:
-      host: elasticsearch-master.elastic.svc
+  - elasticsearchDataStream:
+      dataStreamName: fluentd-ds-thiis-co
+      host: elasticsearch-es-default.elastic-system.svc.cluster.local
       port: 9200
-      logstashFormat: true
-      logstashPrefix: fluent-log-cluster-fd
+      user:
+        valueFrom:
+          secretKeyRef: 
+            name: elasticsearch-user
+            key: user
+      password:
+        valueFrom:
+          secretKeyRef:
+            name: elasticsearch-user
+            key: password
+      scheme: https
+      sslVerify: false

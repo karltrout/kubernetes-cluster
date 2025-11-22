@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: max-map-count-setter
+  namespace: kube-system
   labels:
     k8s-app: max-map-count-setter
 spec:

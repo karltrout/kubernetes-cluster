@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+  namespace: fluent
+data:
+  fluentd.conf: |
+    <source>
+      @type forward
+      port 24224
+      bind 0.0.0.0
+    </source>
+
+    <match>
+      @type elasticsearch
+      host  elasticsearch-es-default.elastic-service.svc.cluster.local
+      port 9200
+      scheme https 
+      transport tls
+      ssl_verify false # set to true for prod and set the following lines correctly (??)
+      # ssl_version "#{ENV['FLUENT_ELASTICSEARCH_SSL_VERSION'] || 'TLSv1_2'}"
+      # ca_file "/fluentd/elastic/ca.crt"
+      # client_cert "/fluentd/elastic/tls.crt"
+      # client_key "/fluentd/elastic/tls.key"
+      api-key 
+      logstash_format true
+      logstash_prefix fluentd
+    </match>

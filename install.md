@@ -137,7 +137,7 @@ helm repo update
 
 ```
 dnf install keepalived 
-vim /etc/keepalived/keepalived.conf
+vim /etc/keepalived/keepalived.conf (vip set to 192.168.1.223)
 vim /etc/keepalived/check_apiserver.sh
 vim /etc/kubernetes/manifests/keepalived.yaml
 ```
@@ -147,7 +147,7 @@ vim /etc/haproxy/haproxy.cfg
 vim /etc/kubernetes/manifests/haproxy.yaml
 ```
 
-**Install kube-vip image for later**
+**Add any necessary image repos like this**
 ```
 mkdir -p /etc/containerd/certs.d/ghcr.io
 vim /etc/containerd/certs.d/ghcr.io/hosts.toml
@@ -161,7 +161,10 @@ server = "https://ghcr.io"
 
 systemctl restart containerd
 systemctl status containerd
+```
 
+**Install kube-vip image for later**
+```
 ctr images pull ghcr.io/kube-vip/kube-vip:v1.0.1
 ```
 
@@ -171,6 +174,8 @@ export VIP=192.168.1.230
 export INTERFACE=ens3
 export KUBECONFIG=/etc/kubernetes/admin.conf
 alias kube-vip='ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:v1.0.1 vip /kube-vip'
+
+source .bashrc
 ```
 
 **Create kube-vip daemonset yaml**
@@ -182,6 +187,7 @@ cp kube-vip.yaml /etc/kubernetes/manifests/
 
 **[CLONE from here]**
 
+# Create your Kubernetes Cluster #
 
 ```
 kubeadm init --v=5 --dry-run --kubernetes-version v1.31.13 --control-plane-endpoint "192.168.1.223:6443" --upload-certs
@@ -254,7 +260,7 @@ kubectl apply -f kube-flannel.yml
 kubectl apply -f kube-vip-cloud-controller.yaml 
 kubectl apply -f kube-vip-ccm-configmap.yaml
 ```
-**ElasticSearch Log Database Operator**
+**ElasticSearch Log Database Operator namespace: elastic-system**
 ```
 kubectl create -f ECK-crds.yaml 
 kubectl apply -f ECK-operator.yaml
@@ -294,32 +300,161 @@ kubectl create -f deploy/test-claim.yaml -f deploy/test-pod.yaml
 ```
 kubectl create -f deploy/test-claim.yaml -f deploy/test-pod.yaml
 kubectl delete -f deploy/test-pod.yaml -f deploy/test-claim.yaml
+```
+
+# Install Elasticsearch #
+```
 cd ../../
 
 kubectl apply -f elasticsearch-cluster.yaml
-kubectl get elasticsearch
-PASSWORD=$(kubectl get secret elasticsearch-cluster-es-elastic-user -o go-template='{{.data.elastic | base64deco
-de}}')
+kubectl get -n elastic-system elasticsearch
+PASSWORD=$(kubectl get -n elastic-system secret elasticsearch-es-elastic-user -o go-template='{{.data.elastic | base64decode}}')
 USER='elastic'
-
+```
+**Install Kibana. You will need a trusted Certification for this in a Secret in the same namespace**
+```
 kubectl apply -f es-kibana.yaml
-kubectl get kibana
-
-kubectl get service kibana-es-kb-http
-kubectl port-forward service/kibana-es-kb-http 5601
 ```
 
-**kube-state-metrics**
+# Install kube-state-metrics #
 
 ***NOTE: This is so elasticsearch can monitor the kubernetes cluster***
 ```
 git clone -b release-2.14 --single-branch  https://github.com/kubernetes/kube-state-metrics.git
 cd kube-state-metrics
 kubectl -n kube-system apply -f examples/standard/cluster-role.yaml -f examples/standard/cluster-role-binding.yaml -f examples/standard/service-account.yaml -f examples/standard/deployment.yaml -f examples/standard/service.yaml
+```
+# Install Fluent Bit as log aggregator #
 
 ```
+helm repo add fluent https://fluent.github.io/helm-charts
+helm upgrade --install fluent-bit fluent/fluent-bit -n fluent
+```
+**Test install**
+```
+export POD_NAME=$(kubectl get pods --namespace fluent -l "app.kubernetes.io/name=fluent-bit,app.kubernetes.io/instance=fluent-bit" -o jsonpath="{.items[0].metadata.name}")
 
-**Elasticsearch agent.... not sure about this but it does send data for testingf to elasticsearch**
+kubectl --namespace fluent port-forward $POD_NAME 2020:2020
+```
+**GOTO:**  http://localhost:2020
+
+If Successful exit the port forward command.
+
+**Edit ConfigMap: fluent/fluent-bit (fluent-bit.conf)**
+```
+  fluent-bit.conf: |
+    [SERVICE]
+        Daemon Off
+        Flush 1
+        Log_Level info
+        Parsers_File /fluent-bit/etc/parsers.conf
+        Parsers_File /fluent-bit/etc/conf/custom_parsers.conf
+        HTTP_Server On
+        HTTP_Listen 0.0.0.0
+        HTTP_Port 2020
+        Health_Check On
+
+    [INPUT]
+        name cpu
+        tag metrics_cpu
+
+    [INPUT]
+        name disk
+        tag metrics_disk
+
+    [INPUT]
+        name mem
+        tag metrics_memory
+
+    [INPUT]
+        name netif
+        tag metrics_netif
+        interface  eth0
+
+    [INPUT]
+        Name tail
+        Path /var/log/containers/*.log
+        Exclude_Path /var/log/containers/fluent-bit*
+        multiline.parser cri
+        Tag kube.*
+        Mem_Buf_Limit 10MB
+        Skip_Long_Lines On
+
+    [INPUT]
+        Name systemd
+        Tag host.*
+        Systemd_Filter _SYSTEMD_UNIT=kubelet.service
+        Read_From_Tail On
+
+    [FILTER]
+        Name kubernetes
+        Match kube.*
+        Merge_Log On
+        Keep_Log Off
+        K8S-Logging.Parser On
+        K8S-Logging.Exclude On
+
+    [OUTPUT]
+        Name es
+        Match kube.*
+        Host elasticsearch-es-default.elastic-system.svc.cluster.local
+        port 9200
+        HTTP_User elastic
+        HTTP_Passwd ys7FYKdTDh2E7NsV9Z0ajoJK
+        Logstash_Format On
+        Retry_Limit False
+        tls On
+        tls.verify Off
+        Replace_Dots On
+        Suppress_Type_Name On
+        Buffer_Size False
+        Trace_Error On
+
+    [OUTPUT]
+        Name es
+        Match host.*
+        Host elasticsearch-es-default.elastic-system.svc.cluster.local
+        port 9200
+        HTTP_User elastic
+        HTTP_Passwd ys7FYKdTDh2E7NsV9Z0ajoJK
+        Logstash_Format On
+        Logstash_Prefix node
+        Retry_Limit False
+        tls On
+        tls.verify Off
+        Replace_Dots On
+        Suppress_Type_Name On
+        Buffer_Size False
+        Trace_Error On
+
+    [OUTPUT]
+        Name es
+        Match metrics_*
+        Host elasticsearch-es-default.elastic-system.svc.cluster.local
+        port 9200
+        HTTP_User elastic
+        HTTP_Passwd ys7FYKdTDh2E7NsV9Z0ajoJK
+        Logstash_Format On
+        Logstash_Prefix metrics
+        Retry_Limit False
+        tls On
+        tls.verify Off
+        Replace_Dots On
+        Suppress_Type_Name On
+        Buffer_Size False
+        Trace_Error On
+```
+
+**Restart all fluent-bit PODS.**
+
+
+
+
+# `Following are things I tried to do` #
+
+**ignore for now**
+
+**Elasticsearch agent.... not sure about this but it does send data for testing to elasticsearch**
 ```
 kubectl apply -f kubernetes-integration.yaml
 ```
@@ -329,22 +464,23 @@ kubectl apply -f kubernetes-integration.yaml
 
 *NOTE: will fail without the --server-side flag.*
 ```
+cd fluentd-operator
 kubectl create namespace fluent
 kubectl apply -f fluent-setup.yaml --server-side
 ```
 **Fluentd setup**
 ```
-kubectl apply -f fluentd-deploy.yaml
+kubectl apply -f fluentd-pv.yaml
+kubectl apply -f fluentd-es-user-secret.yaml
+kubectl apply -f fluentd-input.yaml
+kubectl apply -f fluentd-clusterwide-config.yaml
 ```
-**fluentbit deploy**
+
 ```
- kubectl apply -f fluentbit-deploy.yaml
+kubectl apply -f fluentbit-config.yaml
  ```
 
 
-`Following are things I tried to do`
-
-**ignore for now**
 ```
 helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
 ```
@@ -362,17 +498,68 @@ helm upgrade --install cert-manager jetstack/cert-manager  --namespace cert-mana
 ```
 
 
-*HELPFUL COMMANDS:*
+## HELPFUL COMMANDS: ##
 
-PROBLEM: Node cannot join cluster (the Tolken has expired after 24hrs)
+**PROBLEM:** Node cannot join cluster (the Tolken has expired after 24hrs)
 
-ERROR: "error: could not find a JWS signature in the cluster-info ConfigMap for token ID"
+**ERROR:** "error: could not find a JWS signature in the cluster-info ConfigMap for token ID"
 
-FIX: kubeadm token create --print-join-command
+**FIX:** kubeadm token create --print-join-command
 
-RESULT: creates new join command with new tokens.
+**RESULT:** creates new join command with new tokens.
 ```
 kubeadm join 192.168.1.223:6443 --token iz16no.ufhgfxtbjngtb6px --discovery-token-ca-cert-hash sha256:abd44c158a2d05a74047ede37e205bebb24dcc432c65e9f340f9f26168f26f8b
 ```
 
+**PROBLEM:** use nslookup to check dns name
 
+**ERROR:** NONE
+
+**FIX:** NONE
+
+**RESULT:** successful DNS lookup of host name in kubernetes
+```
+kubectl run -it --rm --restart=Never busybox --image=busybox -- nslookup elasticsearch-es-default.elastic-system.svc.cluster.local
+```
+
+**PROBLEM:** test endpoint from inside a container to a kubernetes service.
+
+**ERROR:** can not tell if applications can talk to one another via API's
+
+**FIX:** run alpine image and install curl openssl
+
+``` bash
+kubectl run -it --rm --restart=Never --image=alpine handytools -n ${1:-default} -- /bin/ash
+#If you don't see a command prompt, try pressing enter.
+/ > apk --update add curl openssl
+/ > curl -k -XGET "https://elasticsearch-es-default.elastic-system.svc.cluster.local:9200/_cluster/health?pretty"
+
+{
+  "error" : {
+    "root_cause" : [
+      {
+        "type" : "security_exception",
+        "reason" : "missing authentication credentials for REST request [/_cluster/health?pretty]",
+        "header" : {
+          "WWW-Authenticate" : [
+            "Basic realm=\"security\", charset=\"UTF-8\"",
+            "Bearer realm=\"security\"",
+            "ApiKey"
+          ]
+        }
+      }
+    ],
+    "type" : "security_exception",
+    "reason" : "missing authentication credentials for REST request [/_cluster/health?pretty]",
+    "header" : {
+      "WWW-Authenticate" : [
+        "Basic realm=\"security\", charset=\"UTF-8\"",
+        "Bearer realm=\"security\"",
+        "ApiKey"
+      ]
+    }
+  },
+  "status" : 401
+}
+
+```

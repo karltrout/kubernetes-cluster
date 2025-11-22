@@ -2,11 +2,12 @@ apiVersion: kibana.k8s.elastic.co/v1
 kind: Kibana
 metadata:
   name: kibana-es
+  namespace: elastic-system
 spec:
   version: 9.2.1
   count: 1
   elasticsearchRef:
-    name: elasticsearch-cluster
+    name: elasticsearch
   config:
     server.publicBaseUrl: "https://kibana.home.thiis.co:5601"
   http:

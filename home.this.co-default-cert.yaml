@@ -1,8 +1,8 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: default-home-thiis-certificate
-  namespace: default
+  name: kibana-es-home-thiis-certificate
+  namespace: elastic-system
 spec:
   secretName: default-home-thiis-tls
   issuerRef:

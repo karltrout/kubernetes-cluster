@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: fluentd
+  labels:
+    app: fluentd
+  namespace: fluent
+spec:
+  selector:
+    matchLabels:
+      app: fluentd
+  serviceName: fluentd-headless
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: fluentd
+    spec:
+      containers:
+      - name: fluentd
+        image: fluent/fluentd:v1.19-debian-1
+        ports:
+        - containerPort: 24224
+          name: fluentd-port
+        volumeMounts:
+        - name: fluentd-config-volume
+          mountPath: /fluentd/etc/fluent.conf # Mount the config file
+          subPath: fluent.conf
+        - name: fluentd-data
+          mountPath: /var/log/fluentd-logs # Path for logs/buffers
+      volumes:
+      - name: fluentd-config-volume
+        configMap:
+          name: fluentd-config
+  volumeClaimTemplates:
+  - metadata:
+      name: fluentd-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi

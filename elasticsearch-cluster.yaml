@@ -1,7 +1,8 @@
 apiVersion: elasticsearch.k8s.elastic.co/v1
 kind: Elasticsearch
 metadata:
-  name: elasticsearch-cluster
+  name: elasticsearch
+  namespace: elastic-system
 spec:
   version: 9.2.1
   volumeClaimDeletePolicy: DeleteOnScaledownOnly
