@@ -447,6 +447,87 @@ If Successful exit the port forward command.
 
 **Restart all fluent-bit PODS.**
 
+## Cloud Native Postgres ##
+install the kubectl plugin 
+
+```sh
+cd CNPG/
+
+curl -L https://github.com/cloudnative-pg/cloudnative-pg/releases/download/v1.27.1/kubectl-cnpg_1.27.1_linux_x86_64.rpm \
+  --output kube-plugin.rpm
+
+yum --disablerepo=* localinstall kube-plugin.rpm
+
+cp kubectl_complete-cnpg /usr/local/bin/
+```
+*usage:*
+```
+kubectl cnpg install generate --help
+```
+generate yaml install file
+
+```
+kubectl cnpg install generate \
+  -n cnpg-system \
+  --version 1.27.1 \
+  --replicas 3 \
+  --insecure-skip-tls-verify \
+  > operator-install.yaml
+```
+install cnpg operator
+```
+kubectl apply -f operator-install.yaml --server-side
+```
+
+install the latest Cluster Image Catalog (probably wil need to be downloaded to match the current image https://github.com/cloudnative-pg/artifacts/tree/main/image-catalogs)
+```
+kubectl apply -f ClusterImageCatalog.yaml
+```
+
+install the barman CNPG-I plugin for Object Storage backups (OPtional)
+```
+wget https://github.com/cloudnative-pg/plugin-barman-cloud/releases/download/v0.9.0/manifest.yaml
+mv manifest.yaml barman-cnpgi-manifest.yaml
+kubectl apply -f barman-cnpgi-manifest.yaml
+kubectl rollout status deployment -n cnpg-system barman-cloud
+```
+
+create persistent volumes for each database node cluster (these are managed manually and each time you delete a database these need to be recreated. can't figure out how to do it right)
+change the name and hostname.value to match each db nodes hostname
+```
+vim local-pv.yaml
+
+```
+
+Dry-run then apply the new CNPG Database Cluster
+```
+kubectl apply -f new_cluster.yaml --dry-run=server
+kubectl apply -f new_cluster.yaml
+```
+
+to Get quick access to the database, you can install pgadmin4 against the cluster-name
+```
+kubectl cnpg -n cnpg-system pgadmin4 postgresql-app-cluster
+```
+Output:
+```
+To access this pgAdmin instance, use the following credentials:
+
+username: user@pgadmin.com
+password: 0KC805MXtx6CACVIbB1rJ220HmXXg8Fd
+
+
+kubectl get secret postgresql-app-cluster-app -o 'jsonpath={.data.password}' | base64 -d; echo ""
+
+kubectl rollout status deployment postgresql-app-cluster-pgadmin4
+kubectl port-forward deployment/postgresql-app-cluster-pgadmin4 8080:80
+
+Then, navigate to http://localhost:8080 in your browser.
+
+To remove this pgAdmin deployment, execute:
+
+kubectl cnpg pgadmin4 postgresql-app-cluster --dry-run | kubectl delete -f -
+```
 
 
 
