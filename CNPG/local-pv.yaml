@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-pv-cnpg-k8sn01
+spec:
+  capacity:
+    storage: 5Gi # Define the size of the local volume
+  accessModes:
+    - ReadWriteOnce # Only one node can mount this volume in read-write mode
+  persistentVolumeReclaimPolicy: Delete # Data is retained even if the PV is deleted
+  storageClassName: local-storage # Reference a StorageClass (optional, but good practice)
+  local:
+    path: /mnt/data/cnpg # The path on the node where the local volume resides
+  nodeAffinity: # Ensures the PV can only be used on a specific node
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - k8sn01.home.thiis.co

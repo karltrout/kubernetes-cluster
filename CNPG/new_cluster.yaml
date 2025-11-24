@@ -1,0 +1,92 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner # indicates that this StorageClass does not support automatic provisioning
+volumeBindingMode: WaitForFirstConsumer
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cnpg-backup-creds
+  namespace: cnpg-system
+data:
+  ACCESS_KEY_ID: R0tmZjliNDBjYWRiMjExOWYyNThiNTZiMDM=
+  ACCESS_SECRET_KEY: MmM5OTAyOGVmMzQwMzdjZjBkYjg2MzAyZjE1ODk3NGZjYjJkNGE4NTIxYjBmMjQxZjFhNzc4NWYwNjVlMDFjYQ==
+  REGION: Z2FyYWdl
+---
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: davinci-garage
+  namespace: cnpg-system
+spec:
+  configuration:
+    destinationPath: "s3://cnpg-bucket/backup"
+    endpointURL: "http://192.168.1.105:3900"
+    s3Credentials:
+      accessKeyId:
+        name: cnpg-backup-creds
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: cnpg-backup-creds
+        key: ACCESS_SECRET_KEY
+      region:
+        name: cnpg-backup-creds
+        key: REGION
+    wal:
+      compression: gzip
+  retentionPolicy: "30d"
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgresql-app-cluster
+  namespace: cnpg-system
+spec:
+  instances: 3
+  # Example of rolling update strategy:
+  # - unsupervised: automated update of the primary once all
+  #                 replicas have been upgraded (default)
+  # - supervised: requires manual supervision to perform
+  #               the switchover of the primary
+  primaryUpdateStrategy: unsupervised
+
+  # Image Catalog for specify the desired Image
+  imageCatalogRef:
+    apiGroup: postgresql.cnpg.io
+    # Change the following to `ClusterImageCatalog` if needed
+    kind: ClusterImageCatalog
+    name: postgresql-standard-trixie
+    major: 17
+  # Persistent storage configuration
+  storage:
+    pvcTemplate:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: local-storage
+      volumeMode: Filesystem
+  
+  plugins:
+  - name: barman-cloud.cloudnative-pg.io
+    isWALArchiver: true
+    parameters:
+      barmanObjectName: davinci-garage
+---
+# Scheduling the backups
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: pg-davinci-backup
+  namespace: cnpg-system
+spec:
+  cluster:
+    name: postgresql-app-cluster
+  schedule: '0 0 0 * * *'
+  backupOwnerReference: self
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
