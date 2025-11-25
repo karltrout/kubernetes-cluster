@@ -530,6 +530,22 @@ kubectl cnpg pgadmin4 postgresql-app-cluster --dry-run | kubectl delete -f -
 ```
 
 
+# Prometheus-Grafana Installation #
+
+prometheus operator using kustimize to install into the namespace prometheus-system
+```
+kubectl apply -k . --server-side --dry-run=server
+kubectl apply -k . --server-side
+```
+This installs the prometheus CRDS in the group "monitoring.coreos.com" and creates the namespace prometheus-system 
+
+Test completion
+```
+kubectl wait --for=condition=Ready pods -n prometheus-system -l  app.kubernetes.io/name=prometheus-operator
+```
+
+
+
 
 # `Following are things I tried to do` #
 
