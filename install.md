@@ -447,7 +447,7 @@ If Successful exit the port forward command.
 
 **Restart all fluent-bit PODS.**
 
-## Cloud Native Postgres ##
+## Cloud Native PostgresSQL ##
 install the kubectl plugin 
 
 ```sh
@@ -554,14 +554,25 @@ kubectl apply -f 3-alertmanager.yaml
 
 kubectl -n prometheus-system describe ingress prometheus
 ```
-You should now be able to go to http://<Address>/prometheus and http://<Adress>/alertmanager
+You should now be able to go to **http://\<Address\>/prometheus** and **http://\<Adress\>/alertmanager**
 
-Where <Address> is either the ip address from describing the ingress or a DNS record configured to that ip address
+Where **\<Address\>** is either the ip address from describing the ingress or a DNS record configured to that ip address
 
+# Grafana Install #
+**Note:** Using the nginx ingress controller, so the DNS entry is the same as prometheus
+
+You must change the ENV **GF_SERVER_ROOT_URL** value in the file 1-grafana.yaml to the correct url.
+```
+cd kubernetes-cluster/prometheus-grafana/grafana/
+kubectl apply -k . --dry-run=client
+kubectl apply -k . 
+```
+<br><br><br>
 
 # `Following are things I tried to do` #
 
 **ignore for now**
+
 
 **Elasticsearch agent.... not sure about this but it does send data for testing to elasticsearch**
 ```
