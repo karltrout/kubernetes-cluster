@@ -1,0 +1,40 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prometheus
+  namespace: prometheus-system
+spec:
+  externalUrl: http://k8s.home.thiis.co/prometheus
+  routePrefix: /prometheus
+  serviceAccountName: prometheus
+  replicas: 1
+  storage:
+    volumeClaimTemplate:
+      spec:
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: prometheus-storage
+        resources:
+          requests:
+            storage: 5Gi
+  alerting:
+    alertmanagers:
+    - namespace: prometheus-system
+      name: alertmanager
+      port: web
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-storage
+  labels:
+    app.kubernetes.io/name: prometheus-storage
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+  - ReadWriteOnce # required
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: 192.168.1.59
+    path: /mnt/TrueNAS-pool/local/prometheus-data

@@ -1,0 +1,12 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Alertmanager
+metadata:
+  name: alertmanager
+  namespace: prometheus-system
+spec:
+  externalUrl: http://k8s.home.thiis.co/alertmanager
+  routePrefix: /alertmanager
+  replicas: 3
+  resources:
+    requests:
+      memory: 400Mi

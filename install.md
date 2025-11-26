@@ -534,6 +534,7 @@ kubectl cnpg pgadmin4 postgresql-app-cluster --dry-run | kubectl delete -f -
 
 prometheus operator using kustimize to install into the namespace prometheus-system
 ```
+cd prometheus-grafana/prometheus/
 kubectl apply -k . --server-side --dry-run=server
 kubectl apply -k . --server-side
 ```
@@ -543,8 +544,19 @@ Test completion
 ```
 kubectl wait --for=condition=Ready pods -n prometheus-system -l  app.kubernetes.io/name=prometheus-operator
 ```
+# Prometheus and AlertManager #
 
+```
+kubectl apply -f 1-RBAC-prometeus.yaml
+kubectl apply -f 1.5-ingress.yaml 
+kubectl apply -f 2-prometheus.yaml 
+kubectl apply -f 3-alertmanager.yaml 
 
+kubectl -n prometheus-system describe ingress prometheus
+```
+You should now be able to go to http://<Address>/prometheus and http://<Adress>/alertmanager
+
+Where <Address> is either the ip address from describing the ingress or a DNS record configured to that ip address
 
 
 # `Following are things I tried to do` #
