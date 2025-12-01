@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kube-state-metrics
+  namespace: prometheus-system
+  labels:
+    release: prometheus # Or whatever label identifies your Prometheus installation
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kube-state-metrics # Adjust based on your KSM deployment labels
+  endpoints:
+  - port: http-metrics # The name of the port in the Kube-state-metrics Service
+    interval: 30s
+  namespaceSelector:
+    matchNames:
+    - kube-system # Or the namespace where Kube-state-metrics is deployed

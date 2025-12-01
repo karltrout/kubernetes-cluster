@@ -1,0 +1,19 @@
+IP Addresses:
+6 nodes
+CONTROLPLANE vip 
+kube-vip range
+
+RPM Packages:
+dnf-plugins-core (redhat)
+containerd.io (redhat)
+keepalived
+haproxy
+# Kubernetes version 1.31 rpms
+kublet 
+kubeadm 
+kubectl 
+
+Images:
+ghcr.io/kube-vip/kube-vip:v1.0.1
+
+

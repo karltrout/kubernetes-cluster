@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: node-exporter
+  namespace: prometheus-system
+  labels:
+    release: prometheus # Or a label used by your Prometheus instance
+spec:
+  selector:
+    matchLabels:
+      app: node-exporter # Match the Service labels
+  endpoints:
+    - port: metrics # Name of the port defined in the Service
+      interval: 30s # Scrape interval
+      path: /metrics
+  namespaceSelector:
+    matchNames:
+      - prometheus-system

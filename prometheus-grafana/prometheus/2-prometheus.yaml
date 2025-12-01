@@ -8,6 +8,12 @@ spec:
   routePrefix: /prometheus
   serviceAccountName: prometheus
   replicas: 1
+  serviceMonitorSelector:
+    matchLabels:
+      release: prometheus
+  podMonitorSelector:
+    matchLabels:
+      release: prometheus
   storage:
     volumeClaimTemplate:
       spec:

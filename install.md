@@ -178,13 +178,6 @@ alias kube-vip='ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:v1.0.1 vip /ku
 source .bashrc
 ```
 
-**Create kube-vip daemonset yaml**
-```
-kube-vip manifest pod --interface $INTERFACE --address $VIP --controlplane --services --arp kube-vip manifest pod --interface $INTERFACE --address $VIP --services --arp > kube-vip.yaml 
-
-cp kube-vip.yaml /etc/kubernetes/manifests/
-```
-
 **[CLONE from here]**
 
 # Create your Kubernetes Cluster #
@@ -567,11 +560,32 @@ cd kubernetes-cluster/prometheus-grafana/grafana/
 kubectl apply -k . --dry-run=client
 kubectl apply -k . 
 ```
+
+# Set up the Kubernetes monitors #
+ServiceMonitor to pick up the kube-state-metric Service in the kube-system namespace
+```
+kubectl apply -f kube-state-monitor-ServiceMonitor.yaml
+```
+node Exporter daemonset
+```
+cd prometheus-grafana/node_exporter/
+kubectl apply -f 1-daemonSet.yaml
+kubectl apply -f 2-Service.yaml
+kubectl apply -f 3-ServiceMonitor.yaml
+```
+
 <br><br><br>
 
 # `Following are things I tried to do` #
 
 **ignore for now**
+
+**Create kube-vip daemonset yaml**
+```
+kube-vip manifest pod --interface $INTERFACE --address $VIP --controlplane --services --arp  > kube-vip.yaml 
+
+cp kube-vip.yaml /etc/kubernetes/manifests/
+```
 
 
 **Elasticsearch agent.... not sure about this but it does send data for testing to elasticsearch**
