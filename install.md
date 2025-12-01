@@ -163,20 +163,6 @@ systemctl restart containerd
 systemctl status containerd
 ```
 
-**Install kube-vip image for later**
-```
-ctr images pull ghcr.io/kube-vip/kube-vip:v1.0.1
-```
-
-**add To .bashrc**
-```
-export VIP=192.168.1.230
-export INTERFACE=ens3
-export KUBECONFIG=/etc/kubernetes/admin.conf
-alias kube-vip='ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:v1.0.1 vip /kube-vip'
-
-source .bashrc
-```
 
 **[CLONE from here]**
 
@@ -579,6 +565,22 @@ kubectl apply -f 3-ServiceMonitor.yaml
 # `Following are things I tried to do` #
 
 **ignore for now**
+
+
+**Install kube-vip image for later**
+```
+ctr images pull ghcr.io/kube-vip/kube-vip:v1.0.1
+```
+
+**add To .bashrc**
+```
+export VIP=192.168.1.230
+export INTERFACE=ens3
+export KUBECONFIG=/etc/kubernetes/admin.conf
+alias kube-vip='ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:v1.0.1 vip /kube-vip'
+
+source .bashrc
+```
 
 **Create kube-vip daemonset yaml**
 ```
