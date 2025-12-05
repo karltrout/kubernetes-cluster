@@ -25,6 +25,11 @@ systemctl disable firewalld
 **verify ip-4 forwarding = 1**
 
 `sysctl net.ipv4.ip_forward`
+if not then edit it
+```
+vim /etc/sysctl.conf
+sysctl -w net.ipv4.ip_forward=1
+```
 
 `modprobe overlay`
 
